@@ -28,7 +28,7 @@
       <div class="login-sub">Agency CRM</div>
     </div>
     <label class="login-label">Usuario</label>
-    <input class="login-input" id="login-user" placeholder="ruben / angel / iri" autocomplete="username">
+    <input class="login-input" id="login-user" placeholder="Usuario" autocomplete="username">
     <label class="login-label">Contraseña</label>
     <input class="login-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
     <button class="login-btn" onclick="doLogin()">Entrar</button>
@@ -1641,7 +1641,7 @@ function saveIngreso() {
   const modelo = document.getElementById('ing-modelo').value;
   const plataforma = document.getElementById('ing-plataforma').value;
   const concepto = document.getElementById('ing-concepto').value;
-  if (!fecha || !importe || !modelo) { alert('Completa fecha, importe y modelo'); return; }
+  if (!fecha || !importe || !modelo) { showToast('Completa fecha, importe y modelo'); return; }
   DB.ingresos.push({ id: uid(), fecha, importe, modelo, plataforma, concepto });
   saveDB();
   document.getElementById('ing-importe').value = '';
@@ -1656,7 +1656,7 @@ function saveGasto() {
   const concepto = document.getElementById('gas-concepto').value;
   const categoria = document.getElementById('gas-categoria').value;
   const pagador = document.getElementById('gas-pagador').value;
-  if (!fecha || !importe || !concepto) { alert('Completa fecha, importe y concepto'); return; }
+  if (!fecha || !importe || !concepto) { showToast('Completa fecha, importe y concepto'); return; }
   DB.gastos.push({ id: uid(), fecha, importe, concepto, categoria, pagador, tipo: 'compartido' });
   saveDB();
   document.getElementById('gas-importe').value = '';
@@ -1669,7 +1669,7 @@ function saveModelo() {
   const nombre = document.getElementById('mod-nombre').value.trim();
   const comision = parseFloat(document.getElementById('mod-comision').value) || 30;
   const notas = document.getElementById('mod-notas').value.trim();
-  if (!nombre) { alert('Escribe el nombre'); return; }
+  if (!nombre) { showToast('Escribe el nombre'); return; }
   DB.modelos.push({ id: uid(), nombre, comision, color: selectedModColor, notas });
   saveDB();
   document.getElementById('mod-nombre').value = '';
@@ -1685,7 +1685,7 @@ function savePago() {
   const modelo = document.getElementById('pag-modelo').value;
   const concepto = document.getElementById('pag-concepto').value;
   const estado = document.getElementById('pag-estado').value;
-  if (!fecha || !importe || !modelo) { alert('Completa fecha, importe y modelo'); return; }
+  if (!fecha || !importe || !modelo) { showToast('Completa fecha, importe y modelo'); return; }
   DB.pagos.push({ id: uid(), fecha, importe, modelo, concepto, estado });
   saveDB();
   document.getElementById('pag-importe').value = '';
@@ -2139,7 +2139,7 @@ function saveIG() {
   const views = parseFloat(document.getElementById('ig-views').value) || 0;
   const likes = parseFloat(document.getElementById('ig-likes').value) || 0;
   const notas = document.getElementById('ig-notas').value.trim();
-  if (!fecha || !modelo) { alert('Elige fecha y modelo.'); return; }
+  if (!fecha || !modelo) { showToast('Elige fecha y modelo'); return; }
   if (!DB.igStats) DB.igStats = [];
   // calculate ganados vs previous entry for same model
   const prev = [...DB.igStats].filter(r => r.modelo === modelo).sort((a,b) => a.fecha < b.fecha ? 1 : -1)[0];
@@ -2241,7 +2241,7 @@ function saveTarea() {
   const fecha = document.getElementById('ta-fecha').value;
   const prioridad = document.getElementById('ta-prioridad').value;
   const notas = document.getElementById('ta-notas').value.trim();
-  if (!desc) { alert('Escribe la descripción de la tarea'); return; }
+  if (!desc) { showToast('Escribe la descripción de la tarea'); return; }
   if (!DB.tareas) DB.tareas = [];
   DB.tareas.push({ id: uid(), va, modelo, desc, fecha, prioridad, notas, estado: 'pendiente', creadaEn: new Date().toISOString() });
   saveDB();
@@ -2352,7 +2352,7 @@ function saveContenido() {
   const carpeta = document.getElementById('co-carpeta').value;
   const plataforma = document.getElementById('co-plataforma').value;
   const notas = document.getElementById('co-notas').value.trim();
-  if (!nombre) { alert('Escribe el nombre del clip'); return; }
+  if (!nombre) { showToast('Escribe el nombre del clip'); return; }
   if (!DB.contenido) DB.contenido = [];
   DB.contenido.push({ id: uid(), nombre, modelo, duracion, link, carpeta, plataforma, notas, creadoEn: new Date().toISOString() });
   saveDB();
@@ -2488,7 +2488,7 @@ function cerrarPeriodo() {
   const envioAngel = paraAngel; // Rubén envía a Ángel su parte completa
 
   if (!DB.ingresos.length && !DB.gastos.length) {
-    alert('No hay datos que archivar.');
+    showToast('No hay datos que archivar');
     return;
   }
 
@@ -2515,7 +2515,7 @@ function cerrarPeriodo() {
   saveDB();
   renderAll();
   renderHistorial();
-  alert(`✓ Periodo "${label}" archivado. Dashboard puesto a cero.`);
+  showToast(`✓ Periodo archivado`);
 }
 
 // ── Render historial ──
@@ -2597,7 +2597,7 @@ function savePeticion() {
   const titulo = document.getElementById('pet-titulo').value.trim();
   const instrucciones = document.getElementById('pet-instrucciones').value.trim();
   const fecha = document.getElementById('pet-fecha').value;
-  if (!titulo) { alert('Añade un título'); return; }
+  if (!titulo) { showToast('Añade un título'); return; }
   if (!DB.peticiones) DB.peticiones = [];
   DB.peticiones.push({ id: uid(), modelo, tipo, titulo, instrucciones, fecha, estado: 'pendiente', creado: new Date().toISOString().slice(0,10) });
   saveDB();
@@ -2700,6 +2700,20 @@ renderAll();
 renderHistorial();
 renderPeticiones();
 renderCuentas();
+
+function showToast(msg) {
+  let t = document.getElementById('__toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '__toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none;font-family:sans-serif';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
 </script>
 
 
