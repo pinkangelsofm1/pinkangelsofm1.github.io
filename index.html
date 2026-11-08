@@ -431,6 +431,26 @@ tbody td {
   margin-top: 8px;
 }
 
+/* ── Petición tipo tabs ── */
+.pet-tipo-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--fg2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.pet-tipo-btn.active {
+  background: #c084fc;
+  color: #fff;
+  border-color: #c084fc;
+}
+.pet-tipo-btn:hover:not(.active) { border-color: #c084fc; color: var(--fg); }
+
 /* ── Modal ── */
 [hidden] { display: none !important; }
 .modal-overlay {
@@ -1153,38 +1173,50 @@ tbody td {
 
     <!-- Modal petición -->
     <div class="modal-overlay" id="modal-peticion" hidden>
-      <div class="modal">
-        <div class="modal-title">📋 Nueva petición</div>
+      <div class="modal" style="max-width:520px;width:100%">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <div class="modal-title" style="margin-bottom:2px">Nueva tarea para la modelo</div>
+            <div style="font-size:12px;color:var(--fg2)">La verá al momento en su panel y subirá ahí su vídeo.</div>
+          </div>
+          <button onclick="closeModal('modal-peticion')" style="background:none;border:none;color:var(--fg2);font-size:20px;cursor:pointer;padding:4px;line-height:1">×</button>
+        </div>
+        <!-- Type tabs -->
+        <div style="display:flex;gap:8px;margin:16px 0 12px;flex-wrap:wrap" id="pet-tipo-tabs">
+          <button class="pet-tipo-btn active" data-tipo="replica" onclick="setPetTipo('replica')">Réplica (reel)</button>
+          <button class="pet-tipo-btn" data-tipo="reel" onclick="setPetTipo('reel')">Reel</button>
+          <button class="pet-tipo-btn" data-tipo="feed" onclick="setPetTipo('feed')">Feed (foto)</button>
+          <button class="pet-tipo-btn" data-tipo="historia" onclick="setPetTipo('historia')">Historias</button>
+        </div>
+        <!-- Hint -->
+        <div id="pet-hint" style="font-size:12px;color:var(--fg2);background:var(--surface2);border-left:3px solid #c084fc;border-radius:6px;padding:10px 13px;margin-bottom:14px">
+          Al crear la tarea pasarás a la pantalla donde subes el vídeo que tiene que replicar. La modelo verá el original y su grabación en paralelo.
+        </div>
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">Modelo</label>
-            <select class="form-select" id="pet-modelo"><option value="">Seleccionar…</option></select>
+            <label class="form-label">Modelo <span style="color:#f87171">*</span></label>
+            <select class="form-select" id="pet-modelo"><option value="">Elige una modelo</option></select>
           </div>
           <div class="form-group">
-            <label class="form-label">Tipo</label>
-            <select class="form-select" id="pet-tipo">
-              <option value="replica">🔄 Réplica</option>
-              <option value="reel">🎬 Reel</option>
-              <option value="feed">📸 Feed</option>
-              <option value="historia">📱 Historia</option>
-            </select>
+            <label class="form-label">Fecha límite</label>
+            <input type="date" class="form-input" id="pet-fecha">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Título</label>
-          <input type="text" class="form-input" id="pet-titulo" placeholder="Ej: Replicar transición outfit">
+          <label class="form-label">Título <span style="color:#f87171">*</span></label>
+          <input type="text" class="form-input" id="pet-titulo" placeholder="Ej: Replicar transición outfit con chasquido">
         </div>
         <div class="form-group">
           <label class="form-label">Instrucciones</label>
-          <textarea class="form-input" id="pet-instrucciones" rows="3" placeholder="Detalles para la modelo…"></textarea>
+          <textarea class="form-input" id="pet-instrucciones" rows="3" placeholder="Mismo plano, mismos tiempos, sin marca de agua…"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Fecha límite</label>
-          <input type="date" class="form-input" id="pet-fecha">
+          <label class="form-label">Link de referencia (Drive, vídeo a replicar…)</label>
+          <input type="text" class="form-input" id="pet-link" placeholder="https://drive.google.com/…">
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost" onclick="closeModal('modal-peticion')">Cancelar</button>
-          <button class="btn btn-primary" onclick="savePeticion()">Guardar</button>
+          <button class="btn btn-primary" onclick="savePeticion()">Crear petición</button>
         </div>
       </div>
     </div>
@@ -2592,18 +2624,42 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 
 // ── Peticiones ──
+let __petTipo = 'replica';
+function setPetTipo(tipo) {
+  __petTipo = tipo;
+  document.querySelectorAll('.pet-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+  const hints = {
+    replica: 'Al crear la tarea pasarás a la pantalla donde subes el vídeo que tiene que replicar. La modelo verá el original y su grabación en paralelo.',
+    reel: 'La modelo grabará un reel original según tus instrucciones y lo subirá a su panel.',
+    feed: 'La modelo subirá una foto de feed según el briefing que indiques aquí.',
+    historia: 'La modelo grabará una historia según las instrucciones y la subirá para tu aprobación.'
+  };
+  document.getElementById('pet-hint').textContent = hints[tipo] || '';
+}
 function savePeticion() {
   const modelo = document.getElementById('pet-modelo').value;
-  const tipo = document.getElementById('pet-tipo').value;
   const titulo = document.getElementById('pet-titulo').value.trim();
   const instrucciones = document.getElementById('pet-instrucciones').value.trim();
   const fecha = document.getElementById('pet-fecha').value;
+  const link = document.getElementById('pet-link').value.trim();
   if (!titulo) { showToast('Añade un título'); return; }
   if (!DB.peticiones) DB.peticiones = [];
-  DB.peticiones.push({ id: uid(), modelo, tipo, titulo, instrucciones, fecha, estado: 'pendiente', creado: new Date().toISOString().slice(0,10) });
+  DB.peticiones.unshift({ id: uid(), modelo, tipo: __petTipo, titulo, instrucciones, fecha, link, estado: 'pendiente', creado: new Date().toISOString().slice(0,10) });
   saveDB();
+  document.getElementById('pet-titulo').value = '';
+  document.getElementById('pet-instrucciones').value = '';
+  document.getElementById('pet-link').value = '';
   closeModal('modal-peticion');
   renderPeticiones();
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff/3600000);
+  if (h < 1) return 'hace menos de 1h';
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h/24);
+  return d === 1 ? 'hace 1 día' : `hace ${d} días`;
 }
 function renderPeticiones() {
   if (!DB.peticiones) DB.peticiones = [];
@@ -2611,32 +2667,47 @@ function renderPeticiones() {
   if (!container) return;
   const sel = document.getElementById('pet-modelo');
   if (sel) {
-    sel.innerHTML = '<option value="">Seleccionar…</option>';
+    sel.innerHTML = '<option value="">Elige una modelo</option>';
     DB.modelos.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.nombre; sel.appendChild(o); });
   }
   if (!DB.peticiones.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sin peticiones. Pulsa "+ Nueva petición" para crear una.</div></div>';
     return;
   }
-  const tipoIcons = { replica:'🔄', reel:'🎬', feed:'📸', historia:'📱' };
-  const estadoBadge = { pendiente:'<span class="badge badge-yellow">⏳ Pendiente</span>', completada:'<span class="badge badge-green">✓ Completada</span>', cancelada:'<span class="badge badge-red">✕ Cancelada</span>' };
+  const tipoIcons = { replica:'🎬', reel:'🎬', feed:'📸', historia:'📱' };
+  const tipoLabel = { replica:'Réplica', reel:'Reel', feed:'Feed', historia:'Historia' };
+  const tipoBadgeColor = { replica:'#c084fc', reel:'#60a5fa', feed:'#4ade80', historia:'#fbbf24' };
   container.innerHTML = DB.peticiones.map(p => {
     const mod = DB.modelos.find(m => m.id === p.modelo);
+    const color = mod?.color || '#9896a8';
+    const estadoHtml = p.estado === 'pendiente'
+      ? `<span class="badge badge-yellow">⏳ Pendiente</span>`
+      : p.estado === 'completada'
+      ? `<span class="badge badge-green">✓ Completada</span>`
+      : `<span class="badge badge-red">✕ Cancelada</span>`;
+    const tipoBadge = `<span style="padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${tipoBadgeColor[p.tipo]||'#c084fc'}22;color:${tipoBadgeColor[p.tipo]||'#c084fc'};border:1px solid ${tipoBadgeColor[p.tipo]||'#c084fc'}44">${tipoLabel[p.tipo]||p.tipo}</span>`;
     return `<div class="card">
       <div class="card-body" style="display:flex;align-items:flex-start;gap:14px">
         <div style="width:38px;height:38px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${tipoIcons[p.tipo]||'📋'}</div>
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
             <span style="font-size:14px;font-weight:600">${p.titulo}</span>
-            ${estadoBadge[p.estado]||''}
+            ${estadoHtml}
+            ${tipoBadge}
           </div>
-          <div style="font-size:12px;color:var(--fg2);margin-bottom:6px">${mod?mod.nombre:'—'} · ${p.fecha?fmtDate(p.fecha):'Sin fecha'}</div>
-          ${p.instrucciones ? `<div style="font-size:12px;color:var(--fg2);background:var(--surface2);border-radius:7px;padding:8px 11px">${p.instrucciones}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--fg2);margin-bottom:6px;flex-wrap:wrap">
+            ${mod ? `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>${mod.nombre}</span>` : ''}
+            ${p.fecha ? `<span>📅 ${fmtDate(p.fecha)}</span>` : ''}
+            ${p.creado ? `<span>🕐 ${timeAgo(p.creado)}</span>` : ''}
+          </div>
+          ${p.instrucciones ? `<div style="font-size:12px;color:var(--fg2);background:var(--surface2);border-radius:7px;padding:8px 11px;margin-bottom:6px">${p.instrucciones}</div>` : ''}
+          ${p.link ? `<div style="font-size:12px"><a href="${p.link}" target="_blank" style="color:#c084fc;text-decoration:none">🔗 ${p.link.length>50?p.link.slice(0,50)+'…':p.link}</a></div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          ${p.estado==='pendiente'?`<button class="btn btn-sm" style="background:#4ade8022;color:var(--green);border:1px solid #4ade8044" onclick="setPetEstado('${p.id}','completada')">✓ Hecha</button>
-          <button class="btn btn-sm" style="background:#f8717122;color:var(--red);border:1px solid #f8717144" onclick="setPetEstado('${p.id}','cancelada')">✕ Cancelar</button>`:''}
-          <button class="btn btn-sm btn-ghost" onclick="delPeticion('${p.id}')">🗑</button>
+          ${p.estado==='pendiente'?`
+          <button class="btn btn-sm" style="background:#4ade8022;color:var(--green);border:1px solid #4ade8044;white-space:nowrap" onclick="setPetEstado('${p.id}','completada')">✓ Completar</button>
+          <button class="btn btn-sm" style="background:#f8717122;color:var(--red);border:1px solid #f8717144;white-space:nowrap" onclick="setPetEstado('${p.id}','cancelada')">✕ Cancelar</button>`:''}
+          <button class="btn btn-sm btn-ghost" onclick="delPeticion('${p.id}')" style="color:var(--fg2)">🗑</button>
         </div>
       </div>
     </div>`;
