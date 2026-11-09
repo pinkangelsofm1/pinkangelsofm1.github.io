@@ -28,7 +28,7 @@
       <div class="login-sub">Agency CRM</div>
     </div>
     <label class="login-label">Usuario</label>
-    <input class="login-input" id="login-user" placeholder="ruben / angel / iri" autocomplete="username">
+    <input class="login-input" id="login-user" placeholder="Usuario" autocomplete="username">
     <label class="login-label">Contraseña</label>
     <input class="login-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
     <button class="login-btn" onclick="doLogin()">Entrar</button>
@@ -431,7 +431,28 @@ tbody td {
   margin-top: 8px;
 }
 
+/* ── Petición tipo tabs ── */
+.pet-tipo-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--fg2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.pet-tipo-btn.active {
+  background: #c084fc;
+  color: #fff;
+  border-color: #c084fc;
+}
+.pet-tipo-btn:hover:not(.active) { border-color: #c084fc; color: var(--fg); }
+
 /* ── Modal ── */
+[hidden] { display: none !important; }
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -654,6 +675,9 @@ tbody td {
       <button class="nav-btn" data-view="competencia" onclick="switchView('competencia')" style="position:relative">
         <span class="nav-icon">🔥</span> Competencia
         <span id="comp-badge" style="position:absolute;top:7px;right:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 6px">3</span>
+      </button>
+      <button class="nav-btn" data-view="virales-x" onclick="switchView('virales-x')">
+        <span class="nav-icon">🐦</span> Virales X
       </button>
     </nav>
     <div style="padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">
@@ -1150,40 +1174,121 @@ tbody td {
       </div>
     </div>
 
+    <!-- ── VIRALES X ── -->
+    <div class="view" id="view-virales-x">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Virales X</div>
+          <div class="page-subtitle">Tweets virales por tema · genera replies con IA</div>
+        </div>
+        <button class="btn btn-primary" onclick="buscarVirales()">🔍 Buscar virales</button>
+      </div>
+
+      <!-- Config búsqueda -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:200px">
+              <label style="font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Tema / Keywords</label>
+              <input id="vx-query" class="login-input" style="margin-bottom:0;width:100%;box-sizing:border-box"
+                placeholder="ej: fitness motivacion, viaje, lifestyle..."
+                value="motivacion fitness lifestyle">
+            </div>
+            <div style="min-width:120px">
+              <label style="font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Idioma</label>
+              <select id="vx-lang" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:10px 12px;font-size:14px;width:100%">
+                <option value="es">Español</option>
+                <option value="en">Inglés</option>
+                <option value="pt">Portugués</option>
+              </select>
+            </div>
+            <div style="min-width:120px">
+              <label style="font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Tono reply</label>
+              <select id="vx-tone" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:10px 12px;font-size:14px;width:100%">
+                <option value="hook">👀 Gancho</option>
+                <option value="seductive">😏 Seductor</option>
+                <option value="funny">😄 Divertido</option>
+                <option value="empathetic">🤍 Empático</option>
+                <option value="provocative">🔥 Provocador</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="buscarVirales()" style="height:40px;white-space:nowrap">Buscar →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Topics rápidos -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="vx-topics">
+        <span style="font-size:12px;color:var(--fg2);align-self:center">Rápidos:</span>
+        <button class="pet-tipo-btn" onclick="setVxQuery('fitness motivacion deporte')">💪 Fitness</button>
+        <button class="pet-tipo-btn" onclick="setVxQuery('viaje turismo aventura')">✈️ Viajes</button>
+        <button class="pet-tipo-btn" onclick="setVxQuery('lifestyle lujo moda')">👗 Lifestyle</button>
+        <button class="pet-tipo-btn" onclick="setVxQuery('cocina recetas gastronomia')">🍳 Cocina</button>
+        <button class="pet-tipo-btn" onclick="setVxQuery('musica concierto artista')">🎵 Música</button>
+        <button class="pet-tipo-btn" onclick="setVxQuery('tecnologia IA innovacion')">💻 Tech</button>
+      </div>
+
+      <!-- Estado / loading -->
+      <div id="vx-status" style="display:none;text-align:center;padding:32px;color:var(--fg2);font-size:14px">
+        <div style="font-size:28px;margin-bottom:12px;animation:spin 1s linear infinite;display:inline-block">⏳</div>
+        <div id="vx-status-text">Buscando tweets virales...</div>
+      </div>
+
+      <!-- Lista tweets -->
+      <div id="vx-list" style="display:flex;flex-direction:column;gap:12px">
+        <div class="empty-state">
+          <div class="empty-icon">🐦</div>
+          <div class="empty-text">Pulsa "Buscar virales" para encontrar tweets trending por tema</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal petición -->
     <div class="modal-overlay" id="modal-peticion" hidden>
-      <div class="modal">
-        <div class="modal-title">📋 Nueva petición</div>
+      <div class="modal" style="max-width:520px;width:100%">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <div class="modal-title" style="margin-bottom:2px">Nueva tarea para la modelo</div>
+            <div style="font-size:12px;color:var(--fg2)">La verá al momento en su panel y subirá ahí su vídeo.</div>
+          </div>
+          <button onclick="closeModal('modal-peticion')" style="background:none;border:none;color:var(--fg2);font-size:20px;cursor:pointer;padding:4px;line-height:1">×</button>
+        </div>
+        <!-- Type tabs -->
+        <div style="display:flex;gap:8px;margin:16px 0 12px;flex-wrap:wrap" id="pet-tipo-tabs">
+          <button class="pet-tipo-btn active" data-tipo="replica" onclick="setPetTipo('replica')">Réplica (reel)</button>
+          <button class="pet-tipo-btn" data-tipo="reel" onclick="setPetTipo('reel')">Reel</button>
+          <button class="pet-tipo-btn" data-tipo="feed" onclick="setPetTipo('feed')">Feed (foto)</button>
+          <button class="pet-tipo-btn" data-tipo="historia" onclick="setPetTipo('historia')">Historias</button>
+        </div>
+        <!-- Hint -->
+        <div id="pet-hint" style="font-size:12px;color:var(--fg2);background:var(--surface2);border-left:3px solid #c084fc;border-radius:6px;padding:10px 13px;margin-bottom:14px">
+          Al crear la tarea pasarás a la pantalla donde subes el vídeo que tiene que replicar. La modelo verá el original y su grabación en paralelo.
+        </div>
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">Modelo</label>
-            <select class="form-select" id="pet-modelo"><option value="">Seleccionar…</option></select>
+            <label class="form-label">Modelo <span style="color:#f87171">*</span></label>
+            <select class="form-select" id="pet-modelo"><option value="">Elige una modelo</option></select>
           </div>
           <div class="form-group">
-            <label class="form-label">Tipo</label>
-            <select class="form-select" id="pet-tipo">
-              <option value="replica">🔄 Réplica</option>
-              <option value="reel">🎬 Reel</option>
-              <option value="feed">📸 Feed</option>
-              <option value="historia">📱 Historia</option>
-            </select>
+            <label class="form-label">Fecha límite</label>
+            <input type="date" class="form-input" id="pet-fecha">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Título</label>
-          <input type="text" class="form-input" id="pet-titulo" placeholder="Ej: Replicar transición outfit">
+          <label class="form-label">Título <span style="color:#f87171">*</span></label>
+          <input type="text" class="form-input" id="pet-titulo" placeholder="Ej: Replicar transición outfit con chasquido">
         </div>
         <div class="form-group">
           <label class="form-label">Instrucciones</label>
-          <textarea class="form-input" id="pet-instrucciones" rows="3" placeholder="Detalles para la modelo…"></textarea>
+          <textarea class="form-input" id="pet-instrucciones" rows="3" placeholder="Mismo plano, mismos tiempos, sin marca de agua…"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Fecha límite</label>
-          <input type="date" class="form-input" id="pet-fecha">
+          <label class="form-label">Link de referencia (Drive, vídeo a replicar…)</label>
+          <input type="text" class="form-input" id="pet-link" placeholder="https://drive.google.com/…">
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost" onclick="closeModal('modal-peticion')">Cancelar</button>
-          <button class="btn btn-primary" onclick="savePeticion()">Guardar</button>
+          <button class="btn btn-primary" onclick="savePeticion()">Crear petición</button>
         </div>
       </div>
     </div>
@@ -1641,7 +1746,7 @@ function saveIngreso() {
   const modelo = document.getElementById('ing-modelo').value;
   const plataforma = document.getElementById('ing-plataforma').value;
   const concepto = document.getElementById('ing-concepto').value;
-  if (!fecha || !importe || !modelo) { alert('Completa fecha, importe y modelo'); return; }
+  if (!fecha || !importe || !modelo) { showToast('Completa fecha, importe y modelo'); return; }
   DB.ingresos.push({ id: uid(), fecha, importe, modelo, plataforma, concepto });
   saveDB();
   document.getElementById('ing-importe').value = '';
@@ -1656,7 +1761,7 @@ function saveGasto() {
   const concepto = document.getElementById('gas-concepto').value;
   const categoria = document.getElementById('gas-categoria').value;
   const pagador = document.getElementById('gas-pagador').value;
-  if (!fecha || !importe || !concepto) { alert('Completa fecha, importe y concepto'); return; }
+  if (!fecha || !importe || !concepto) { showToast('Completa fecha, importe y concepto'); return; }
   DB.gastos.push({ id: uid(), fecha, importe, concepto, categoria, pagador, tipo: 'compartido' });
   saveDB();
   document.getElementById('gas-importe').value = '';
@@ -1669,7 +1774,7 @@ function saveModelo() {
   const nombre = document.getElementById('mod-nombre').value.trim();
   const comision = parseFloat(document.getElementById('mod-comision').value) || 30;
   const notas = document.getElementById('mod-notas').value.trim();
-  if (!nombre) { alert('Escribe el nombre'); return; }
+  if (!nombre) { showToast('Escribe el nombre'); return; }
   DB.modelos.push({ id: uid(), nombre, comision, color: selectedModColor, notas });
   saveDB();
   document.getElementById('mod-nombre').value = '';
@@ -1685,7 +1790,7 @@ function savePago() {
   const modelo = document.getElementById('pag-modelo').value;
   const concepto = document.getElementById('pag-concepto').value;
   const estado = document.getElementById('pag-estado').value;
-  if (!fecha || !importe || !modelo) { alert('Completa fecha, importe y modelo'); return; }
+  if (!fecha || !importe || !modelo) { showToast('Completa fecha, importe y modelo'); return; }
   DB.pagos.push({ id: uid(), fecha, importe, modelo, concepto, estado });
   saveDB();
   document.getElementById('pag-importe').value = '';
@@ -2139,7 +2244,7 @@ function saveIG() {
   const views = parseFloat(document.getElementById('ig-views').value) || 0;
   const likes = parseFloat(document.getElementById('ig-likes').value) || 0;
   const notas = document.getElementById('ig-notas').value.trim();
-  if (!fecha || !modelo) { alert('Elige fecha y modelo.'); return; }
+  if (!fecha || !modelo) { showToast('Elige fecha y modelo'); return; }
   if (!DB.igStats) DB.igStats = [];
   // calculate ganados vs previous entry for same model
   const prev = [...DB.igStats].filter(r => r.modelo === modelo).sort((a,b) => a.fecha < b.fecha ? 1 : -1)[0];
@@ -2241,7 +2346,7 @@ function saveTarea() {
   const fecha = document.getElementById('ta-fecha').value;
   const prioridad = document.getElementById('ta-prioridad').value;
   const notas = document.getElementById('ta-notas').value.trim();
-  if (!desc) { alert('Escribe la descripción de la tarea'); return; }
+  if (!desc) { showToast('Escribe la descripción de la tarea'); return; }
   if (!DB.tareas) DB.tareas = [];
   DB.tareas.push({ id: uid(), va, modelo, desc, fecha, prioridad, notas, estado: 'pendiente', creadaEn: new Date().toISOString() });
   saveDB();
@@ -2352,7 +2457,7 @@ function saveContenido() {
   const carpeta = document.getElementById('co-carpeta').value;
   const plataforma = document.getElementById('co-plataforma').value;
   const notas = document.getElementById('co-notas').value.trim();
-  if (!nombre) { alert('Escribe el nombre del clip'); return; }
+  if (!nombre) { showToast('Escribe el nombre del clip'); return; }
   if (!DB.contenido) DB.contenido = [];
   DB.contenido.push({ id: uid(), nombre, modelo, duracion, link, carpeta, plataforma, notas, creadoEn: new Date().toISOString() });
   saveDB();
@@ -2488,7 +2593,7 @@ function cerrarPeriodo() {
   const envioAngel = paraAngel; // Rubén envía a Ángel su parte completa
 
   if (!DB.ingresos.length && !DB.gastos.length) {
-    alert('No hay datos que archivar.');
+    showToast('No hay datos que archivar');
     return;
   }
 
@@ -2515,7 +2620,7 @@ function cerrarPeriodo() {
   saveDB();
   renderAll();
   renderHistorial();
-  alert(`✓ Periodo "${label}" archivado. Dashboard puesto a cero.`);
+  showToast(`✓ Periodo archivado`);
 }
 
 // ── Render historial ──
@@ -2591,18 +2696,42 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 });
 
 // ── Peticiones ──
+let __petTipo = 'replica';
+function setPetTipo(tipo) {
+  __petTipo = tipo;
+  document.querySelectorAll('.pet-tipo-btn').forEach(b => b.classList.toggle('active', b.dataset.tipo === tipo));
+  const hints = {
+    replica: 'Al crear la tarea pasarás a la pantalla donde subes el vídeo que tiene que replicar. La modelo verá el original y su grabación en paralelo.',
+    reel: 'La modelo grabará un reel original según tus instrucciones y lo subirá a su panel.',
+    feed: 'La modelo subirá una foto de feed según el briefing que indiques aquí.',
+    historia: 'La modelo grabará una historia según las instrucciones y la subirá para tu aprobación.'
+  };
+  document.getElementById('pet-hint').textContent = hints[tipo] || '';
+}
 function savePeticion() {
   const modelo = document.getElementById('pet-modelo').value;
-  const tipo = document.getElementById('pet-tipo').value;
   const titulo = document.getElementById('pet-titulo').value.trim();
   const instrucciones = document.getElementById('pet-instrucciones').value.trim();
   const fecha = document.getElementById('pet-fecha').value;
-  if (!titulo) { alert('Añade un título'); return; }
+  const link = document.getElementById('pet-link').value.trim();
+  if (!titulo) { showToast('Añade un título'); return; }
   if (!DB.peticiones) DB.peticiones = [];
-  DB.peticiones.push({ id: uid(), modelo, tipo, titulo, instrucciones, fecha, estado: 'pendiente', creado: new Date().toISOString().slice(0,10) });
+  DB.peticiones.unshift({ id: uid(), modelo, tipo: __petTipo, titulo, instrucciones, fecha, link, estado: 'pendiente', creado: new Date().toISOString().slice(0,10) });
   saveDB();
+  document.getElementById('pet-titulo').value = '';
+  document.getElementById('pet-instrucciones').value = '';
+  document.getElementById('pet-link').value = '';
   closeModal('modal-peticion');
   renderPeticiones();
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff/3600000);
+  if (h < 1) return 'hace menos de 1h';
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h/24);
+  return d === 1 ? 'hace 1 día' : `hace ${d} días`;
 }
 function renderPeticiones() {
   if (!DB.peticiones) DB.peticiones = [];
@@ -2610,32 +2739,47 @@ function renderPeticiones() {
   if (!container) return;
   const sel = document.getElementById('pet-modelo');
   if (sel) {
-    sel.innerHTML = '<option value="">Seleccionar…</option>';
+    sel.innerHTML = '<option value="">Elige una modelo</option>';
     DB.modelos.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.nombre; sel.appendChild(o); });
   }
   if (!DB.peticiones.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Sin peticiones. Pulsa "+ Nueva petición" para crear una.</div></div>';
     return;
   }
-  const tipoIcons = { replica:'🔄', reel:'🎬', feed:'📸', historia:'📱' };
-  const estadoBadge = { pendiente:'<span class="badge badge-yellow">⏳ Pendiente</span>', completada:'<span class="badge badge-green">✓ Completada</span>', cancelada:'<span class="badge badge-red">✕ Cancelada</span>' };
+  const tipoIcons = { replica:'🎬', reel:'🎬', feed:'📸', historia:'📱' };
+  const tipoLabel = { replica:'Réplica', reel:'Reel', feed:'Feed', historia:'Historia' };
+  const tipoBadgeColor = { replica:'#c084fc', reel:'#60a5fa', feed:'#4ade80', historia:'#fbbf24' };
   container.innerHTML = DB.peticiones.map(p => {
     const mod = DB.modelos.find(m => m.id === p.modelo);
+    const color = mod?.color || '#9896a8';
+    const estadoHtml = p.estado === 'pendiente'
+      ? `<span class="badge badge-yellow">⏳ Pendiente</span>`
+      : p.estado === 'completada'
+      ? `<span class="badge badge-green">✓ Completada</span>`
+      : `<span class="badge badge-red">✕ Cancelada</span>`;
+    const tipoBadge = `<span style="padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${tipoBadgeColor[p.tipo]||'#c084fc'}22;color:${tipoBadgeColor[p.tipo]||'#c084fc'};border:1px solid ${tipoBadgeColor[p.tipo]||'#c084fc'}44">${tipoLabel[p.tipo]||p.tipo}</span>`;
     return `<div class="card">
       <div class="card-body" style="display:flex;align-items:flex-start;gap:14px">
         <div style="width:38px;height:38px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${tipoIcons[p.tipo]||'📋'}</div>
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
             <span style="font-size:14px;font-weight:600">${p.titulo}</span>
-            ${estadoBadge[p.estado]||''}
+            ${estadoHtml}
+            ${tipoBadge}
           </div>
-          <div style="font-size:12px;color:var(--fg2);margin-bottom:6px">${mod?mod.nombre:'—'} · ${p.fecha?fmtDate(p.fecha):'Sin fecha'}</div>
-          ${p.instrucciones ? `<div style="font-size:12px;color:var(--fg2);background:var(--surface2);border-radius:7px;padding:8px 11px">${p.instrucciones}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--fg2);margin-bottom:6px;flex-wrap:wrap">
+            ${mod ? `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>${mod.nombre}</span>` : ''}
+            ${p.fecha ? `<span>📅 ${fmtDate(p.fecha)}</span>` : ''}
+            ${p.creado ? `<span>🕐 ${timeAgo(p.creado)}</span>` : ''}
+          </div>
+          ${p.instrucciones ? `<div style="font-size:12px;color:var(--fg2);background:var(--surface2);border-radius:7px;padding:8px 11px;margin-bottom:6px">${p.instrucciones}</div>` : ''}
+          ${p.link ? `<div style="font-size:12px"><a href="${p.link}" target="_blank" style="color:#c084fc;text-decoration:none">🔗 ${p.link.length>50?p.link.slice(0,50)+'…':p.link}</a></div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          ${p.estado==='pendiente'?`<button class="btn btn-sm" style="background:#4ade8022;color:var(--green);border:1px solid #4ade8044" onclick="setPetEstado('${p.id}','completada')">✓ Hecha</button>
-          <button class="btn btn-sm" style="background:#f8717122;color:var(--red);border:1px solid #f8717144" onclick="setPetEstado('${p.id}','cancelada')">✕ Cancelar</button>`:''}
-          <button class="btn btn-sm btn-ghost" onclick="delPeticion('${p.id}')">🗑</button>
+          ${p.estado==='pendiente'?`
+          <button class="btn btn-sm" style="background:#4ade8022;color:var(--green);border:1px solid #4ade8044;white-space:nowrap" onclick="setPetEstado('${p.id}','completada')">✓ Completar</button>
+          <button class="btn btn-sm" style="background:#f8717122;color:var(--red);border:1px solid #f8717144;white-space:nowrap" onclick="setPetEstado('${p.id}','cancelada')">✕ Cancelar</button>`:''}
+          <button class="btn btn-sm btn-ghost" onclick="delPeticion('${p.id}')" style="color:var(--fg2)">🗑</button>
         </div>
       </div>
     </div>`;
@@ -2700,6 +2844,214 @@ renderAll();
 renderHistorial();
 renderPeticiones();
 renderCuentas();
+
+function showToast(msg) {
+  let t = document.getElementById('__toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '__toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none;font-family:sans-serif';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// ── VIRALES X ──────────────────────────────────────────────
+const VX_WORKER = 'https://virales-pinkangels.pinkangelsofm1.workers.dev';
+
+function setVxQuery(q) {
+  document.getElementById('vx-query').value = q;
+  buscarVirales();
+}
+
+async function buscarVirales() {
+  const query = document.getElementById('vx-query').value.trim();
+  const lang = document.getElementById('vx-lang').value;
+  if (!query) { showToast('Escribe un tema para buscar'); return; }
+
+  const statusEl = document.getElementById('vx-status');
+  const listEl = document.getElementById('vx-list');
+  const statusText = document.getElementById('vx-status-text');
+
+  statusEl.style.display = 'block';
+  listEl.style.display = 'none';
+  statusText.textContent = 'Buscando tweets virales...';
+
+  try {
+    const url = `${VX_WORKER}/search?q=${encodeURIComponent(query)}&lang=${lang}&max=15`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    statusEl.style.display = 'none';
+    listEl.style.display = 'flex';
+
+    if (data.error) {
+      listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">${data.error}</div></div>`;
+      return;
+    }
+
+    if (!data.tweets || data.tweets.length === 0) {
+      listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No se encontraron tweets virales para ese tema. Prueba otras palabras.</div></div>`;
+      return;
+    }
+
+    renderVirales(data.tweets);
+  } catch(e) {
+    statusEl.style.display = 'none';
+    listEl.style.display = 'flex';
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Error de conexión con el worker. ${e.message}</div></div>`;
+  }
+}
+
+// Store tweets data for reply generation
+let vxTweetsData = [];
+
+function renderVirales(tweets) {
+  vxTweetsData = tweets;
+  const listEl = document.getElementById('vx-list');
+  listEl.innerHTML = tweets.map((t, i) => {
+    const timeAgoStr = timeAgoVx(t.created_at);
+    const engNum = (t.likes||0) + (t.retweets||0)*2 + (t.replies||0);
+    const engLabel = engNum > 10000 ? `🔥 ${(engNum/1000).toFixed(1)}K` : engNum > 1000 ? `⚡ ${(engNum/1000).toFixed(1)}K` : `💬 ${engNum}`;
+    return `
+    <div class="card" id="vx-card-${i}">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">${((t.author_name||t.author)||'?')[0].toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${escapeHtml(t.author_name||'')||'@'+t.author}</div>
+            <div style="font-size:11px;color:var(--fg2)">@${t.author} · ${timeAgoStr}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <span style="font-size:12px;font-weight:600;color:var(--accent)">${engLabel}</span>
+            <a href="${t.url}" target="_blank" style="font-size:11px;color:var(--fg2);text-decoration:none;padding:3px 8px;border:1px solid var(--border);border-radius:6px">Ver →</a>
+          </div>
+        </div>
+        <div style="font-size:14px;line-height:1.5;margin-bottom:10px">${escapeHtml(t.text)}</div>
+        <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--fg2)">❤️ ${fmtNum(t.likes)}</span>
+          <span style="font-size:12px;color:var(--fg2)">🔁 ${fmtNum(t.retweets)}</span>
+          <span style="font-size:12px;color:var(--fg2)">💬 ${fmtNum(t.replies)}</span>
+          <span style="font-size:12px;color:var(--fg2)">👥 ${fmtNum(t.followers)}</span>
+        </div>
+        <div id="vx-reply-area-${i}" style="display:none">
+          <div style="background:var(--surface2);border:1px solid var(--accent)33;border-radius:10px;padding:12px;margin-bottom:10px">
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">✨ Reply generado</div>
+            <div id="vx-reply-text-${i}" style="font-size:14px;line-height:1.5"></div>
+          </div>
+          <div id="vx-explain-${i}" style="display:none;font-size:12px;color:var(--fg2);background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:10px;line-height:1.5"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="aceptarReply(${i})" style="background:#4ade8022;color:var(--green);border:1px solid #4ade8044;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">✅ Aceptar</button>
+            <button onclick="rechazarReply(${i})" style="background:#f8717122;color:var(--red);border:1px solid #f8717144;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">❌ Rechazar</button>
+            <button onclick="cambiarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">🔄 Cambiar</button>
+            <button onclick="explicarReply(${i})" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">💡 Explicar</button>
+          </div>
+        </div>
+        <div id="vx-gen-btn-${i}">
+          <button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%;text-align:center">
+            ✨ Generar reply con IA
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function generarReply(i) {
+  const t = vxTweetsData[i];
+  if (!t) return;
+  const tone = document.getElementById('vx-tone').value;
+  const btn = document.getElementById(`vx-gen-btn-${i}`);
+  btn.innerHTML = '<div style="text-align:center;color:var(--fg2);font-size:13px;padding:4px">Generando... ⏳</div>';
+
+  try {
+    const resp = await fetch(`${VX_WORKER}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tweet_text: t.text, author: t.author, tone })
+    });
+    const data = await resp.json();
+    if (data.error) { showToast('Error: ' + data.error); btn.innerHTML = `<button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">✨ Generar reply con IA</button>`; return; }
+    document.getElementById(`vx-reply-text-${i}`).textContent = data.reply;
+    document.getElementById(`vx-reply-area-${i}`).style.display = 'block';
+    document.getElementById(`vx-explain-${i}`).style.display = 'none';
+    btn.style.display = 'none';
+  } catch(e) {
+    showToast('Error de conexión');
+    btn.innerHTML = `<button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">✨ Generar reply con IA</button>`;
+  }
+}
+
+function aceptarReply(i) {
+  const text = document.getElementById(`vx-reply-text-${i}`)?.textContent || '';
+  if (!text) return;
+  try { navigator.clipboard.writeText(text); } catch(e) {}
+  const t = vxTweetsData[i];
+  const card = document.getElementById(`vx-card-${i}`);
+  card.style.borderColor = '#4ade8066';
+  card.style.opacity = '0.6';
+  showToast('✅ Reply copiado al portapapeles — pégalo en X');
+  // Open tweet in new tab
+  if (t?.url) window.open(t.url, '_blank');
+}
+
+function rechazarReply(i) {
+  const card = document.getElementById(`vx-card-${i}`);
+  card.style.transition = 'opacity .3s';
+  card.style.opacity = '0';
+  setTimeout(() => { card.style.display = 'none'; }, 300);
+}
+
+async function cambiarReply(i) {
+  document.getElementById(`vx-reply-area-${i}`).style.display = 'none';
+  document.getElementById(`vx-gen-btn-${i}`).style.display = 'block';
+  document.getElementById(`vx-gen-btn-${i}`).innerHTML = `<button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">✨ Generar reply con IA</button>`;
+  await generarReply(i);
+}
+
+function explicarReply(i) {
+  const t = vxTweetsData[i];
+  const reply = document.getElementById(`vx-reply-text-${i}`)?.textContent || '';
+  const tone = document.getElementById('vx-tone').value;
+  const toneNames = { hook:'gancho', seductive:'seductor', funny:'divertido', empathetic:'empático', provocative:'provocador' };
+  const explainEl = document.getElementById(`vx-explain-${i}`);
+  if (explainEl.style.display !== 'none') { explainEl.style.display = 'none'; return; }
+
+  const explanations = {
+    hook: `Este reply de tipo gancho deja algo sin resolver, generando curiosidad. El usuario tiene que ir a tu perfil para entender la insinuación. No revela nada pero promete mucho.`,
+    seductive: `Tono seductor directo. Crea una conexión inmediata con el usuario y sugiere complicidad sin ser explícito. Ideal para tweets sobre relaciones o emociones.`,
+    funny: `El humor rompe la barrera de entrada. Un reply gracioso tiene más posibilidades de que el usuario responda, generando visibilidad de tu cuenta.`,
+    empathetic: `Conecta emocionalmente primero. El usuario siente que le entiendes, lo que genera confianza y más probabilidad de que siga tu perfil.`,
+    provocative: `El tono desafiante activa el instinto de demostrar algo. El usuario responderá para defenderse o para saber más, aumentando la interacción.`
+  };
+  explainEl.textContent = `💡 Por qué funciona este reply (tono ${toneNames[tone]}): ${explanations[tone] || 'Generado para maximizar engagement con este tweet.'}`;
+  explainEl.style.display = 'block';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtNum(n) {
+  if (!n) return '0';
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000) return (n/1000).toFixed(1)+'K';
+  return String(n);
+}
+
+function timeAgoVx(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff/60000);
+  if (m < 60) return `hace ${m}m`;
+  const h = Math.floor(m/60);
+  if (h < 24) return `hace ${h}h`;
+  return `hace ${Math.floor(h/24)}d`;
+}
 </script>
 
 
