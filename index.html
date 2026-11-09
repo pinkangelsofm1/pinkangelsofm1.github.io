@@ -1179,68 +1179,28 @@ tbody td {
       <div class="page-header">
         <div>
           <div class="page-title">Virales X</div>
-          <div class="page-subtitle">Tweets virales por tema · genera replies con IA</div>
+          <div class="page-subtitle" id="vx-subtitle">Cargando tweets virales...</div>
         </div>
-        <button class="btn btn-primary" onclick="buscarVirales()">🔍 Buscar virales</button>
-      </div>
-
-      <!-- Config búsqueda -->
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-body">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-            <div style="flex:1;min-width:200px">
-              <label style="font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Tema / Keywords</label>
-              <input id="vx-query" class="login-input" style="margin-bottom:0;width:100%;box-sizing:border-box"
-                placeholder="ej: fitness motivacion, viaje, lifestyle..."
-                value="motivacion fitness lifestyle">
-            </div>
-            <div style="min-width:120px">
-              <label style="font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Idioma</label>
-              <select id="vx-lang" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:10px 12px;font-size:14px;width:100%">
-                <option value="es">Español</option>
-                <option value="en">Inglés</option>
-                <option value="pt">Portugués</option>
-              </select>
-            </div>
-            <div style="min-width:120px">
-              <label style="font-size:11px;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Tono reply</label>
-              <select id="vx-tone" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:10px 12px;font-size:14px;width:100%">
-                <option value="hook">👀 Gancho</option>
-                <option value="seductive">😏 Seductor</option>
-                <option value="funny">😄 Divertido</option>
-                <option value="empathetic">🤍 Empático</option>
-                <option value="provocative">🔥 Provocador</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" onclick="buscarVirales()" style="height:40px;white-space:nowrap">Buscar →</button>
-          </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="vx-tone" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--fg);padding:8px 12px;font-size:13px">
+            <option value="hook">👀 Gancho</option>
+            <option value="seductive">😏 Seductor</option>
+            <option value="funny">😄 Divertido</option>
+            <option value="empathetic">🤍 Empático</option>
+            <option value="provocative">🔥 Provocador</option>
+          </select>
+          <button class="btn btn-primary" onclick="cargarVirales()">🔄 Actualizar</button>
         </div>
-      </div>
-
-      <!-- Topics rápidos -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="vx-topics">
-        <span style="font-size:12px;color:var(--fg2);align-self:center">Rápidos:</span>
-        <button class="pet-tipo-btn" onclick="setVxQuery('fitness motivacion deporte')">💪 Fitness</button>
-        <button class="pet-tipo-btn" onclick="setVxQuery('viaje turismo aventura')">✈️ Viajes</button>
-        <button class="pet-tipo-btn" onclick="setVxQuery('lifestyle lujo moda')">👗 Lifestyle</button>
-        <button class="pet-tipo-btn" onclick="setVxQuery('cocina recetas gastronomia')">🍳 Cocina</button>
-        <button class="pet-tipo-btn" onclick="setVxQuery('musica concierto artista')">🎵 Música</button>
-        <button class="pet-tipo-btn" onclick="setVxQuery('tecnologia IA innovacion')">💻 Tech</button>
       </div>
 
       <!-- Estado / loading -->
-      <div id="vx-status" style="display:none;text-align:center;padding:32px;color:var(--fg2);font-size:14px">
-        <div style="font-size:28px;margin-bottom:12px;animation:spin 1s linear infinite;display:inline-block">⏳</div>
-        <div id="vx-status-text">Buscando tweets virales...</div>
+      <div id="vx-status" style="text-align:center;padding:48px;color:var(--fg2);font-size:14px">
+        <div style="font-size:32px;margin-bottom:12px">⏳</div>
+        <div>Cargando tweets virales...</div>
       </div>
 
       <!-- Lista tweets -->
-      <div id="vx-list" style="display:flex;flex-direction:column;gap:12px">
-        <div class="empty-state">
-          <div class="empty-icon">🐦</div>
-          <div class="empty-text">Pulsa "Buscar virales" para encontrar tweets trending por tema</div>
-        </div>
-      </div>
+      <div id="vx-list" style="display:none;flex-direction:column;gap:14px"></div>
     </div>
 
     <!-- Modal petición -->
@@ -1705,6 +1665,7 @@ function switchView(name) {
   const btn = document.querySelector(`[data-view="${name}"]`);
   if (btn) btn.classList.add('active');
   renderAll();
+  if (name === 'virales-x') cargarVirales();
 }
 
 // ── Modals ──
@@ -2861,56 +2822,42 @@ function showToast(msg) {
 
 // ── VIRALES X ──────────────────────────────────────────────
 const VX_WORKER = 'https://virales-pinkangels.pinkangelsofm1.workers.dev';
-
-function setVxQuery(q) {
-  document.getElementById('vx-query').value = q;
-  buscarVirales();
-}
-
-async function buscarVirales() {
-  const query = document.getElementById('vx-query').value.trim();
-  const lang = document.getElementById('vx-lang').value;
-  if (!query) { showToast('Escribe un tema para buscar'); return; }
-
-  const statusEl = document.getElementById('vx-status');
-  const listEl = document.getElementById('vx-list');
-  const statusText = document.getElementById('vx-status-text');
-
-  statusEl.style.display = 'block';
-  listEl.style.display = 'none';
-  statusText.textContent = 'Buscando tweets virales...';
-
-  try {
-    const url = `${VX_WORKER}/search?q=${encodeURIComponent(query)}&lang=${lang}&max=15`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    statusEl.style.display = 'none';
-    listEl.style.display = 'flex';
-
-    if (data.error) {
-      listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">${data.error}</div></div>`;
-      return;
-    }
-
-    if (!data.tweets || data.tweets.length === 0) {
-      listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No se encontraron tweets virales para ese tema. Prueba otras palabras.</div></div>`;
-      return;
-    }
-
-    renderVirales(data.tweets);
-  } catch(e) {
-    statusEl.style.display = 'none';
-    listEl.style.display = 'flex';
-    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Error de conexión con el worker. ${e.message}</div></div>`;
-  }
-}
-
-// Store tweets data for reply generation
 let vxTweetsData = [];
 
+// Auto-carga al entrar en la sección
+const _origSwitchView = typeof switchView === 'function' ? switchView : null;
+
+function cargarVirales() {
+  const statusEl = document.getElementById('vx-status');
+  const listEl = document.getElementById('vx-list');
+  const subtitle = document.getElementById('vx-subtitle');
+  statusEl.style.display = 'block';
+  listEl.style.display = 'none';
+
+  fetch(`${VX_WORKER}/tweets`)
+    .then(r => r.json())
+    .then(data => {
+      statusEl.style.display = 'none';
+      listEl.style.display = 'flex';
+      if (data.error || !data.tweets || data.tweets.length === 0) {
+        const msg = data.error || 'No hay tweets aún. Vuelve en unos minutos.';
+        listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🐦</div><div class="empty-text">${msg}</div></div>`;
+        if (subtitle) subtitle.textContent = 'Sin tweets disponibles';
+        return;
+      }
+      vxTweetsData = data.tweets;
+      if (subtitle) subtitle.textContent = `${data.tweets.length} tweets virales · actualiza cada 3h`;
+      renderVirales(data.tweets);
+    })
+    .catch(e => {
+      statusEl.style.display = 'none';
+      listEl.style.display = 'flex';
+      listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Error de conexión: ${e.message}</div></div>`;
+    });
+}
+
 function renderVirales(tweets) {
-  vxTweetsData = tweets;
+  const toneLabels = { hook:'👀 Gancho', seductive:'😏 Seductor', funny:'😄 Divertido', empathetic:'🤍 Empático', provocative:'🔥 Provocador' };
   const listEl = document.getElementById('vx-list');
   listEl.innerHTML = tweets.map((t, i) => {
     const timeAgoStr = timeAgoVx(t.created_at);
@@ -2919,6 +2866,7 @@ function renderVirales(tweets) {
     return `
     <div class="card" id="vx-card-${i}">
       <div class="card-body">
+        <!-- Header -->
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">${((t.author_name||t.author)||'?')[0].toUpperCase()}</div>
           <div style="flex:1;min-width:0">
@@ -2930,17 +2878,23 @@ function renderVirales(tweets) {
             <a href="${t.url}" target="_blank" style="font-size:11px;color:var(--fg2);text-decoration:none;padding:3px 8px;border:1px solid var(--border);border-radius:6px">Ver →</a>
           </div>
         </div>
+        <!-- Tweet text -->
         <div style="font-size:14px;line-height:1.5;margin-bottom:10px">${escapeHtml(t.text)}</div>
-        <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+        <!-- Métricas -->
+        <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--fg2)">❤️ ${fmtNum(t.likes)}</span>
           <span style="font-size:12px;color:var(--fg2)">🔁 ${fmtNum(t.retweets)}</span>
           <span style="font-size:12px;color:var(--fg2)">💬 ${fmtNum(t.replies)}</span>
           <span style="font-size:12px;color:var(--fg2)">👥 ${fmtNum(t.followers)}</span>
         </div>
+        <!-- Reply area -->
         <div id="vx-reply-area-${i}" style="display:none">
           <div style="background:var(--surface2);border:1px solid var(--accent)33;border-radius:10px;padding:12px;margin-bottom:10px">
-            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">✨ Reply generado</div>
-            <div id="vx-reply-text-${i}" style="font-size:14px;line-height:1.5"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px">✨ Reply generado</span>
+              <span id="vx-tone-label-${i}" style="font-size:11px;background:var(--accent-dim);color:var(--accent);border-radius:20px;padding:2px 10px;font-weight:600"></span>
+            </div>
+            <div id="vx-reply-text-${i}" style="font-size:14px;line-height:1.6"></div>
           </div>
           <div id="vx-explain-${i}" style="display:none;font-size:12px;color:var(--fg2);background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:10px;line-height:1.5"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2950,22 +2904,25 @@ function renderVirales(tweets) {
             <button onclick="explicarReply(${i})" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer">💡 Explicar</button>
           </div>
         </div>
-        <div id="vx-gen-btn-${i}">
-          <button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%;text-align:center">
-            ✨ Generar reply con IA
-          </button>
+        <!-- Botones tono -->
+        <div id="vx-gen-btn-${i}" style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="generarReplyTone(${i},'hook')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">👀 Gancho</button>
+          <button onclick="generarReplyTone(${i},'seductive')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">😏 Seductor</button>
+          <button onclick="generarReplyTone(${i},'funny')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">😄 Divertido</button>
+          <button onclick="generarReplyTone(${i},'empathetic')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">🤍 Empático</button>
+          <button onclick="generarReplyTone(${i},'provocative')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">🔥 Provocador</button>
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
-async function generarReply(i) {
+async function generarReplyTone(i, tone) {
   const t = vxTweetsData[i];
   if (!t) return;
-  const tone = document.getElementById('vx-tone').value;
-  const btn = document.getElementById(`vx-gen-btn-${i}`);
-  btn.innerHTML = '<div style="text-align:center;color:var(--fg2);font-size:13px;padding:4px">Generando... ⏳</div>';
+  const toneLabels = { hook:'👀 Gancho', seductive:'😏 Seductor', funny:'😄 Divertido', empathetic:'🤍 Empático', provocative:'🔥 Provocador' };
+  const btnArea = document.getElementById(`vx-gen-btn-${i}`);
+  btnArea.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:4px">Generando... ⏳</div>';
 
   try {
     const resp = await fetch(`${VX_WORKER}/reply`, {
@@ -2974,27 +2931,46 @@ async function generarReply(i) {
       body: JSON.stringify({ tweet_text: t.text, author: t.author, tone })
     });
     const data = await resp.json();
-    if (data.error) { showToast('Error: ' + data.error); btn.innerHTML = `<button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">✨ Generar reply con IA</button>`; return; }
+    if (data.error) {
+      showToast('Error: ' + data.error);
+      _restoreGenBtns(i);
+      return;
+    }
     document.getElementById(`vx-reply-text-${i}`).textContent = data.reply;
+    document.getElementById(`vx-tone-label-${i}`).textContent = toneLabels[tone] || tone;
     document.getElementById(`vx-reply-area-${i}`).style.display = 'block';
     document.getElementById(`vx-explain-${i}`).style.display = 'none';
-    btn.style.display = 'none';
+    document.getElementById(`vx-explain-${i}`).dataset.tone = tone;
+    btnArea.style.display = 'none';
   } catch(e) {
     showToast('Error de conexión');
-    btn.innerHTML = `<button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">✨ Generar reply con IA</button>`;
+    _restoreGenBtns(i);
   }
+}
+
+function generarReply(i) { generarReplyTone(i, document.getElementById('vx-tone')?.value || 'hook'); }
+
+function _restoreGenBtns(i) {
+  const btnArea = document.getElementById(`vx-gen-btn-${i}`);
+  if (!btnArea) return;
+  btnArea.style.display = 'flex';
+  btnArea.innerHTML = `
+    <button onclick="generarReplyTone(${i},'hook')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">👀 Gancho</button>
+    <button onclick="generarReplyTone(${i},'seductive')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">😏 Seductor</button>
+    <button onclick="generarReplyTone(${i},'funny')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">😄 Divertido</button>
+    <button onclick="generarReplyTone(${i},'empathetic')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">🤍 Empático</button>
+    <button onclick="generarReplyTone(${i},'provocative')" style="background:var(--surface2);color:var(--fg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">🔥 Provocador</button>`;
 }
 
 function aceptarReply(i) {
   const text = document.getElementById(`vx-reply-text-${i}`)?.textContent || '';
   if (!text) return;
   try { navigator.clipboard.writeText(text); } catch(e) {}
-  const t = vxTweetsData[i];
   const card = document.getElementById(`vx-card-${i}`);
   card.style.borderColor = '#4ade8066';
   card.style.opacity = '0.6';
-  showToast('✅ Reply copiado al portapapeles — pégalo en X');
-  // Open tweet in new tab
+  showToast('✅ Reply copiado — pégalo en X');
+  const t = vxTweetsData[i];
   if (t?.url) window.open(t.url, '_blank');
 }
 
@@ -3006,30 +2982,28 @@ function rechazarReply(i) {
 }
 
 async function cambiarReply(i) {
+  const tone = document.getElementById(`vx-explain-${i}`)?.dataset?.tone || 'hook';
   document.getElementById(`vx-reply-area-${i}`).style.display = 'none';
-  document.getElementById(`vx-gen-btn-${i}`).style.display = 'block';
-  document.getElementById(`vx-gen-btn-${i}`).innerHTML = `<button onclick="generarReply(${i})" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent)44;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%">✨ Generar reply con IA</button>`;
-  await generarReply(i);
+  _restoreGenBtns(i);
+  await generarReplyTone(i, tone);
 }
 
 function explicarReply(i) {
-  const t = vxTweetsData[i];
-  const reply = document.getElementById(`vx-reply-text-${i}`)?.textContent || '';
-  const tone = document.getElementById('vx-tone').value;
+  const tone = document.getElementById(`vx-explain-${i}`)?.dataset?.tone || 'hook';
   const toneNames = { hook:'gancho', seductive:'seductor', funny:'divertido', empathetic:'empático', provocative:'provocador' };
   const explainEl = document.getElementById(`vx-explain-${i}`);
   if (explainEl.style.display !== 'none') { explainEl.style.display = 'none'; return; }
-
   const explanations = {
-    hook: `Este reply de tipo gancho deja algo sin resolver, generando curiosidad. El usuario tiene que ir a tu perfil para entender la insinuación. No revela nada pero promete mucho.`,
-    seductive: `Tono seductor directo. Crea una conexión inmediata con el usuario y sugiere complicidad sin ser explícito. Ideal para tweets sobre relaciones o emociones.`,
-    funny: `El humor rompe la barrera de entrada. Un reply gracioso tiene más posibilidades de que el usuario responda, generando visibilidad de tu cuenta.`,
-    empathetic: `Conecta emocionalmente primero. El usuario siente que le entiendes, lo que genera confianza y más probabilidad de que siga tu perfil.`,
-    provocative: `El tono desafiante activa el instinto de demostrar algo. El usuario responderá para defenderse o para saber más, aumentando la interacción.`
+    hook: 'Deja algo en el aire sin resolver, generando curiosidad. El usuario tiene que ir a tu perfil para entender la insinuación.',
+    seductive: 'Tono seductor directo. Crea conexión inmediata y sugiere complicidad sin ser explícito.',
+    funny: 'El humor rompe barreras. Un reply gracioso tiene más probabilidades de que el usuario responda.',
+    empathetic: 'Conecta emocionalmente primero. El usuario siente que le entiendes, generando confianza.',
+    provocative: 'Activa el instinto de demostrar algo. El usuario responderá para defenderse o saber más.'
   };
-  explainEl.textContent = `💡 Por qué funciona este reply (tono ${toneNames[tone]}): ${explanations[tone] || 'Generado para maximizar engagement con este tweet.'}`;
+  explainEl.textContent = `💡 Tono ${toneNames[tone]}: ${explanations[tone]}`;
   explainEl.style.display = 'block';
 }
+
 
 function escapeHtml(str) {
   if (!str) return '';
